@@ -1,7 +1,13 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles  # ← 追加
 import shutil, os
+from faster_whisper import WhisperModel
+
+
+model = WhisperModel("base")  # "tiny" でもOK
+
 
 app = FastAPI()
 
@@ -20,7 +26,9 @@ async def upload_audio(file: UploadFile = File(...)):
     with open(filepath, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    transcription = "This is a dummy transcription."
+    # ↓ 実際の文字起こし処理
+    segments, _ = model.transcribe(filepath)
+    transcription = "".join([seg.text for seg in segments])
     score = 87.3
 
     return JSONResponse({
@@ -28,3 +36,6 @@ async def upload_audio(file: UploadFile = File(...)):
         "transcription": transcription,
         "score": score
     })
+
+# これを追加！
+app.mount("/temp_audio", StaticFiles(directory="temp_audio"), name="temp_audio")

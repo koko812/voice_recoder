@@ -1,20 +1,68 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>発音評価アップローダ</title>
-</head>
-<body>
-  <h2>🎧 音声ファイルをアップロードしてください</h2>
-  <input type="file" id="audioFile" accept="audio/*"><br><br>
-  <button onclick="upload()">アップロード</button>
+<html lang="ja">
 
-  <div id="result" style="margin-top: 20px;"></div>
+<head>
+  <meta charset="UTF-8" />
+  <title>音声アップロード＆波形表示</title>
+  <script src="https://unpkg.com/wavesurfer.js"></script>
+  <style>
+    #waveform {
+      width: 100%;
+      height: 100px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>🎙️ 音声ファイルをアップロードして波形を表示</h2>
+
+  <input type="file" id="audioInput" accept="audio/*">
+  <button id="uploadBtn">📤 アップロード</button>
+  <button id="playBtn" disabled>▶️ 再生</button>
+
+  <div id="waveform"></div>
 
   <script>
-    async function upload() {
-      const fileInput = document.getElementById('audioFile');
-      const file = fileInput.files[0];
+    const wavesurfer = WaveSurfer.create({
+      container: '#waveform',
+      waveColor: '#ddd',
+      progressColor: '#00aaff',
+      height: 100,
+      responsive: true,
+    });
+
+    wavesurfer.on('ready', () => {
+      const duration = wavesurfer.getDuration();
+      document.getElementById('totalDuration').textContent = duration.toFixed(2);
+    });
+
+    wavesurfer.on('audioprocess', () => {
+      const time = wavesurfer.getCurrentTime();
+      document.getElementById('currentTime').textContent = time.toFixed(2);
+    });
+
+    wavesurfer.on('interaction', () => {
+      const time = wavesurfer.getCurrentTime();
+      document.getElementById('currentTime').textContent = time.toFixed(2);
+    });
+
+    wavesurfer.on('seek', () => {
+      const time = wavesurfer.getCurrentTime();
+      document.getElementById('currentTime').textContent = time.toFixed(2);
+    });
+
+    wavesurfer.on('finish', () => {
+      wavesurfer.seekTo(0);  // ← 再生位置を先頭に戻す！
+      document.getElementById('currentTime').textContent = "0.00";
+    });
+
+    const audioInput = document.getElementById('audioInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const playBtn = document.getElementById('playBtn');
+
+    uploadBtn.addEventListener('click', async () => {
+      const file = audioInput.files[0];
       if (!file) {
         alert("ファイルを選んでください！");
         return;
@@ -23,23 +71,34 @@
       const formData = new FormData();
       formData.append("file", file);
 
-      try {
-        const res = await fetch("http://localhost:8000/upload/", {
-          method: "POST",
-          body: formData
-        });
+      const res = await fetch("http://localhost:8000/upload/", {
+        method: "POST",
+        body: formData,
+      });
 
-        const data = await res.json();
-        document.getElementById('result').innerHTML = `
-          <p>🗂️ ファイル名: ${data.filename}</p>
-          <p>📜 文字起こし: ${data.transcription}</p>
-          <p>📊 発音スコア: ${data.score}</p>
-        `;
-      } catch (err) {
-        console.error("アップロードに失敗:", err);
-        document.getElementById('result').innerText = "❌ アップロード失敗";
-      }
-    }
+      const json = await res.json();
+      document.getElementById('transcriptionText').textContent = json.transcription;
+
+      console.log("アップロード結果:", json);
+
+      const audioUrl = `http://localhost:8000/temp_audio/${json.filename}`;
+      wavesurfer.load(audioUrl);
+      playBtn.disabled = false;
+
+
+    });
+
+    playBtn.addEventListener('click', () => {
+      wavesurfer.playPause();
+    });
   </script>
+  <div>
+    <span>再生位置: <span id="currentTime">0.00</span> 秒</span> |
+    <span>全体長さ: <span id="totalDuration">--</span> 秒</span>
+  </div>
+  <p>📝 文字起こし: <span id="transcriptionText">--</span></p>
+
+
 </body>
+
 </html>
