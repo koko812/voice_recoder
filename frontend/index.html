@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>発音評価アップローダ</title>
+</head>
+<body>
+  <h2>🎧 音声ファイルをアップロードしてください</h2>
+  <input type="file" id="audioFile" accept="audio/*"><br><br>
+  <button onclick="upload()">アップロード</button>
+
+  <div id="result" style="margin-top: 20px;"></div>
+
+  <script>
+    async function upload() {
+      const fileInput = document.getElementById('audioFile');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert("ファイルを選んでください！");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("http://localhost:8000/upload/", {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      document.getElementById('result').innerHTML = \`
+        <p>🗂️ ファイル名: \${data.filename}</p>
+        <p>📜 文字起こし: \${data.transcription}</p>
+        <p>📊 発音スコア: \${data.score}</p>
+      \`;
+    }
+  </script>
+</body>
+</html>
