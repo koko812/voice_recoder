@@ -1,4 +1,123 @@
-````markdown
+# 🔧 CHANGELOG-v0.2 **voice\_recoder** 2025-06-08
+
+---
+
+## 1. 目的・背景
+
+* 既存の素朴な `<script>` 直読み構成では
+
+  * Spectrogram プラグインのバージョン整合が難しい
+  * 非同期処理（アップロード⇄再生⇄文字起こし）がスパゲッティ化
+* **Vite + ESM** 構成に刷新することで
+
+  * モジュール管理とバンドルを一本化
+  * WaveSurfer v7 の最新 API を正式に利用
+  * 「音声再生をブロックしない文字起こし」UXを実現
+* 研究室メンバーがすぐ触れるように **npm scripts & 最小雛形** を整備したい。
+
+---
+
+## 2. 主な変更点
+
+| 種別          | ファイル                      | 内容                                  |
+| ----------- | ------------------------- | ----------------------------------- |
+| ✨ Add       | `frontend/vite.config.js` | Vite ルートを `frontend/` 直下に設定         |
+| ✨ Add       | `frontend/src/main.js`    | WaveSurfer 初期化＋アップロード/再生ロジック        |
+| ✨ Add       | `frontend/index.html`     | Waveform / Spectrogram 用コンテナ追加      |
+| 🗑 Remove   | 旧 `frontend/index.html`   | CDN 直読み & v6/v7 混在コードを廃止            |
+| 🔄 Change   | `backend/main.py`         | **CORS** を `"*"` に緩和（ローカル開発優先）      |
+| 🛠 Refactor | JS ロジック                   | `postFile`, `fetchJSON` など小さなヘルパ関数化 |
+
+---
+
+## 3. 設計変更の内容と理由
+
+| 🟦 対象              | Before                   | After                         | 理由                       |
+| ------------------ | ------------------------ | ----------------------------- | ------------------------ |
+| **フロントビルド**        | 素の HTML + `<script src>` | **Vite + ESM**                | プラグイン読込失敗を根絶／Hot-Reload  |
+| **WaveSurfer 初期化** | イベントハンドラ内で都度生成           | `main.js` グローバルで 1インスタンス      | スコープ問題を排除／再生失敗バグを解消      |
+| **非同期制御**          | `await` + `.then()` 混在   | すべて `await` or すべて `then` に統一 | 可読性向上／例外捕捉を一箇所に          |
+| **再生ボタン制御**        | load 直後に有効化              | `wavesurfer.on('ready')` で有効化 | ready 前 play で無音になる問題を解消 |
+
+---
+
+## 4. 検討した別案・悩み
+
+* **React + hooks** へ全面移行案
+  → 学習コストと工数に対し今回は Vanilla + Vite が最速と判断
+* **Next.js / Astro** など SSR 系
+  → 静的 SPA で要件十分、将来の SSR 必要性が未定なため見送り
+* **SSE / WebSocket** でリアルタイム文字起こし
+  → まず非同期 fetch 版で体験を固め、後日置き換え予定。
+
+---
+
+## 5. 既存コードとの関係・依存箇所
+
+* **バックエンド API パス** (`/upload/`, `/transcribe/`, `/temp_audio/…`) は変更なし。
+* Python 側の依存ライブラリ追加なし（faster-whisperは既存）。
+* 旧 `frontend/index.html` を参照しているリンクがある場合は 404 になる→要切替確認。
+
+---
+
+## 6. 具体的な使い方 / CLI 実行例
+
+```bash
+# backend
+uvicorn backend.main:app --reload --workers 4
+
+# frontend
+cd frontend
+npm install
+npm run dev          # http://localhost:5173
+
+# ブラウザ手順
+# 1. ファイル選択 → アップロード
+# 2. Waveform + Spectrogram が即描画
+# 3. 再生ボタンで試聴しつつ、文字起こしが完了するとテキスト反映
+```
+
+---
+
+## 7. コメント・議論抜粋
+
+> **User**: 「ESM って何？ `<script src>` じゃダメ？」
+> **Assistant**: 「v7 プラグインは ESM 専用。Vite で import するのが一番安定です。」
+
+> **User**: 「再生ボタン押しても鳴らん！」
+> **Assistant**: 「ready 前に play してました。`on('ready')` でボタンを有効化しましょう。」
+
+---
+
+## 8. 既知のバグ・限界
+
+* 文字起こし fetch 中にリロードすると UI が中途半端なまま残る
+* 大ファイル（> 20 MB）は upload 成功してもブラウザのデコードが遅延
+* CORS を `*` にしているのは開発用。運用前に要制限。
+
+---
+
+## 9. TODO リスト
+
+* [ ] Whisper segment を使い再生位置に字幕ハイライト
+* [ ] `maxFileSize` & 拡張子バリデーション
+* [ ] WebSocket 版リアルタイム文字起こし
+* [ ] `vite build` 用の `nginx.conf` / S3 デプロイ手順
+* [ ] GPU サーバー分離 ＋ Celery ジョブキュー
+
+---
+
+## 10. 感想・思ったこと
+
+> Vite + WaveSurfer ESM の組み合わせは「最初のハマり所（プラグイン読込）」を越えると快適そのもの。
+> **「アップロード直後に再生できる UX」** がスムーズにつくれたのが大きな成果。今後はバックエンドを並列化して、より重い解析もブロックフリーで回せる構成にしていきたい。
+
+</br>
+</br>
+</br>
+</br>
+</br>
+
 # 🔧 CHANGELOG-v0.1 **voice_recoder**  2025-06-08
 
 ---

@@ -1,107 +1,24 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
   <meta charset="UTF-8" />
-  <title>音声アップロード＆波形表示＋スペクトログラム</title>
-  <!-- 1) 本体と同じ 6.x 系を読み込む  -->
-  <!-- 2) v6 のプラグインは path が /plugin/ かつグローバル名が WaveSurferSpectrogram -->
-  <script src="https://unpkg.com/wavesurfer.js@7"></script>
-  <script src="https://unpkg.com/wavesurfer.js@7/dist/plugins/spectrogram.esm.js"></script>
-
+  <title>WaveSurfer Vite</title>
   <style>
-    #waveform {
-      width: 100%;
-      height: 100px;
-      margin-top: 20px;
-    }
-
-    #spectrogram {
-      width: 100%;
-      height: 128px;
-      background: black;
-    }
+    #waveform { height: 100px; background: #eee; }
+    #spectrogram { height: 128px; background: black; }
   </style>
 </head>
-
 <body>
-  <h2>🎙️ 音声ファイルをアップロードして波形＋スペクトログラムを表示</h2>
-
-  <input type="file" id="audioInput" accept="audio/*">
+  <h2>🎙️ アップロードして波形＋スペクトログラム</h2>
+  <input type="file" id="audioInput" accept="audio/*" />
   <button id="uploadBtn">📤 アップロード</button>
   <button id="playBtn" disabled>▶️ 再生</button>
-
   <div id="waveform"></div>
   <div id="spectrogram"></div>
-
   <div>
-    <span>再生位置: <span id="currentTime">0.00</span> 秒</span> |
-    <span>全体長さ: <span id="totalDuration">--</span> 秒</span>
+    再生位置: <span id="currentTime">0.00</span> 秒
   </div>
   <p>📝 文字起こし: <span id="transcriptionText">--</span></p>
-
-  <script>
-    const wavesurfer = WaveSurfer.create({
-      container: '#waveform',
-      waveColor: '#4F4A85',
-      progressColor: '#383351',
-      url: '/audio.mp3',
-    })
-
-
-
-    wavesurfer.on('ready', () => {
-      document.getElementById('totalDuration').textContent = wavesurfer.getDuration().toFixed(2);
-    });
-
-    wavesurfer.on('audioprocess', () => {
-      document.getElementById('currentTime').textContent = wavesurfer.getCurrentTime().toFixed(2);
-    });
-
-    wavesurfer.on('seek', () => {
-      document.getElementById('currentTime').textContent = wavesurfer.getCurrentTime().toFixed(2);
-    });
-
-    wavesurfer.on('finish', () => {
-      wavesurfer.seekTo(0);
-      document.getElementById('currentTime').textContent = "0.00";
-    });
-
-    const audioInput = document.getElementById('audioInput');
-    const uploadBtn = document.getElementById('uploadBtn');
-    const playBtn = document.getElementById('playBtn');
-
-    uploadBtn.addEventListener('click', async () => {
-      const file = audioInput.files[0];
-      if (!file) {
-        alert("ファイルを選んでください！");
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("http://localhost:8000/upload/", {
-        method: "POST",
-        body: formData,
-      });
-
-      const json = await res.json();
-      const filename = json.filename;
-      const audioUrl = `http://localhost:8000/temp_audio/${filename}`;
-
-      wavesurfer.load(audioUrl);
-      playBtn.disabled = false;
-
-      const res2 = await fetch(`http://localhost:8000/transcribe/${filename}`);
-      const data = await res2.json();
-      document.getElementById('transcriptionText').textContent = data.transcription;
-    });
-
-    playBtn.addEventListener('click', () => {
-      wavesurfer.playPause();
-    });
-  </script>
+  <script type="module" src="/src/main.js"></script>
 </body>
-
 </html>
