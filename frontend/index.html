@@ -23,17 +23,22 @@
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:8000/upload/", {
-        method: "POST",
-        body: formData
-      });
+      try {
+        const res = await fetch("http://localhost:8000/upload/", {
+          method: "POST",
+          body: formData
+        });
 
-      const data = await res.json();
-      document.getElementById('result').innerHTML = \`
-        <p>🗂️ ファイル名: \${data.filename}</p>
-        <p>📜 文字起こし: \${data.transcription}</p>
-        <p>📊 発音スコア: \${data.score}</p>
-      \`;
+        const data = await res.json();
+        document.getElementById('result').innerHTML = `
+          <p>🗂️ ファイル名: ${data.filename}</p>
+          <p>📜 文字起こし: ${data.transcription}</p>
+          <p>📊 発音スコア: ${data.score}</p>
+        `;
+      } catch (err) {
+        console.error("アップロードに失敗:", err);
+        document.getElementById('result').innerText = "❌ アップロード失敗";
+      }
     }
   </script>
 </body>

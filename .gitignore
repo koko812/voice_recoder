@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+
+# uv / virtualenv
+.venv/
+.uv/
+
+# エディタ
+.vscode/
+.idea/
+
+# OS / その他
+.DS_Store
+Thumbs.db
+
+# temp
+voice_recoder/backend/temp_audio/
+
