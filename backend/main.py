@@ -1,15 +1,12 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles  # ← 追加
-import shutil, os
+from fastapi.staticfiles import StaticFiles
 from faster_whisper import WhisperModel
-
-
-model = WhisperModel("base")  # "tiny" でもOK
-
+import shutil, os
 
 app = FastAPI()
+model = WhisperModel("base")  # "tiny" でもOK
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,16 +23,21 @@ async def upload_audio(file: UploadFile = File(...)):
     with open(filepath, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # ↓ 実際の文字起こし処理
-    segments, _ = model.transcribe(filepath)
-    transcription = "".join([seg.text for seg in segments])
-    score = 87.3
-
     return JSONResponse({
-        "filename": file.filename,
-        "transcription": transcription,
-        "score": score
+        "filename": file.filename
     })
 
-# これを追加！
+@app.get("/transcribe/{filename}")
+async def transcribe_audio(filename: str):
+    filepath = f"temp_audio/{filename}"
+    if not os.path.exists(filepath):
+        return JSONResponse({"error": "File not found"}, status_code=404)
+
+    segments, _ = model.transcribe(filepath)
+    transcription = "".join(seg.text for seg in segments)
+
+    return JSONResponse({
+        "transcription": transcription
+    })
+
 app.mount("/temp_audio", StaticFiles(directory="temp_audio"), name="temp_audio")

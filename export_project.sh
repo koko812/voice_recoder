@@ -12,7 +12,7 @@ echo '```' >> "$OUTPUT"
 echo "" >> "$OUTPUT"
 
 # 2. 対象ファイル拡張子
-EXTENSIONS=("py" "md" "yaml" "log" "jsonl" "json")
+EXTENSIONS=("html"  "js" "py" "md" "yaml" "log" "jsonl" "json")
 
 # 3. 各ファイルの内容を連結出力（.venv配下は除外）
 for ext in "${EXTENSIONS[@]}"; do
